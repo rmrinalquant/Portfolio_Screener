@@ -1,6 +1,5 @@
 .env
 venv
-Notebook
 .vscode
 __pycache__
 Doc
