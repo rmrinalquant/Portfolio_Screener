@@ -61,16 +61,30 @@ def create_table(cursor):
     CREATE TABLE IF NOT EXISTS Technical_Data (
         Row_Id INT GENERATED ALWAYS AS IDENTITY (START WITH 100 INCREMENT BY 1) PRIMARY KEY,
         Stock_Id INT,
+        Date DATE,
         Open NUMERIC,
         High NUMERIC,
         Low NUMERIC,
         Close NUMERIC,
-        Adj_Close NUMERIC,
         Volume BIGINT,
         Created_at DATE DEFAULT CURRENT_DATE,
         FOREIGN KEY (Stock_Id) REFERENCES MetaData_US_companies (Stock_Id) ON DELETE CASCADE
     )
     """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Risk_Return_Metrics (
+        Stock_Id INT PRIMARY KEY,
+        annual_return NUMERIC,
+        volatility NUMERIC,
+        sharpe_ratio NUMERIC,
+        beta NUMERIC,
+        max_drawdown NUMERIC,
+        Created_at DATE DEFAULT CURRENT_DATE,
+        FOREIGN KEY (Stock_Id) REFERENCES MetaData_US_companies (Stock_Id) ON DELETE CASCADE
+        
+    )""")
+
     
 def drop_table(cursor): 
     

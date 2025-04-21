@@ -37,21 +37,23 @@ def data_staging(data, pair = None , Pk_name = "Us"):
     
     Fundamental metrics: 
     -------------------
-        tickers.tickers[ticker].info.get('trailingPE','Null'),
-        tickers.tickers[ticker].info.get('forwardPE','Null'),
-        tickers.tickers[ticker].info.get('priceToBook','Null'),
-        tickers.tickers[ticker].info.get('priceToSalesTrailing12Months','Null'),
-        tickers.tickers[ticker].info.get('pegRatio','Null'),
-        tickers.tickers[ticker].info.get('profitMargins','Null'),
-        tickers.tickers[ticker].info.get('returnOnEquity','Null'),
-        tickers.tickers[ticker].info.get('returnOnAssets','Null'),
-        tickers.tickers[ticker].info.get('revenueGrowth','Null'),
-        tickers.tickers[ticker].info.get('earningsQuarterlyGrowth','Null'),
-        tickers.tickers[ticker].info.get('dividendYield') or info.get('trailingAnnualDividendYield', 'Null'),
-        tickers.tickers[ticker]info.get('debtToEquity', 'Null'),
-        tickers.tickers[ticker].info.get('marketCap', 'Null'),
-        tickers.tickers[ticker].info.get('operatingCashflow', 'Null'),
-        tickers.tickers[ticker].info.get('freeCashflow', 'Null'),
+        _stock_id,
+        tickers.tickers[ticker].info.get('trailingPE', 0),
+        tickers.tickers[ticker].info.get('forwardPE', 0),
+        tickers.tickers[ticker].info.get('priceToBook', 0),
+        tickers.tickers[ticker].info.get('priceToSalesTrailing12Months', 0),
+        tickers.tickers[ticker].info.get('pegRatio', 0),
+        tickers.tickers[ticker].info.get('profitMargins', 0),
+        tickers.tickers[ticker].info.get('returnOnEquity', 0),
+        tickers.tickers[ticker].info.get('returnOnAssets', 0),
+        tickers.tickers[ticker].info.get('revenueGrowth', 0),
+        tickers.tickers[ticker].info.get('earningsQuarterlyGrowth', 0),
+        tickers.tickers[ticker].info.get('trailingAnnualDividendYield', 0),
+        tickers.tickers[ticker].info.get('debtToEquity', 0),
+        tickers.tickers[ticker].info.get('currentRatio', 0),
+        tickers.tickers[ticker].info.get('marketCap', 0),
+        tickers.tickers[ticker].info.get('operatingCashflow', 0),
+        tickers.tickers[ticker].info.get('freeCashflow', 0),
 
     '''
     staged_data = []
@@ -79,11 +81,13 @@ def data_staging(data, pair = None , Pk_name = "Us"):
                         tickers.tickers[ticker].info.get('earningsQuarterlyGrowth', 0),
                         tickers.tickers[ticker].info.get('trailingAnnualDividendYield', 0),
                         tickers.tickers[ticker].info.get('debtToEquity', 0),
+                        tickers.tickers[ticker].info.get('currentRatio', 0),
                         tickers.tickers[ticker].info.get('marketCap', 0),
                         tickers.tickers[ticker].info.get('operatingCashflow', 0),
                         tickers.tickers[ticker].info.get('freeCashflow', 0),
-
-                        ))
+                        
+                              ))    
+                    
                     break
                 except Exception as e:
                     attempt += 1    
