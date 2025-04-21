@@ -1,0 +1,11 @@
+Ticker ABNB has less than 5 years of data 166
+Ticker CEG has less than 5 years of data 444
+Ticker DASH has less than 5 years of data 165
+Ticker EXE has less than 5 years of data 207
+Ticker GEHC has less than 5 years of data 673
+Ticker GEV has less than 5 years of data 995
+Ticker KVUE has less than 5 years of data 768
+Ticker PLTR has less than 5 years of data 116
+Ticker SOLV has less than 5 years of data 995
+Ticker SW has less than 5 years of data 1062
+Ticker VLTO has less than 5 years of data 873
