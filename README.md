@@ -1,14 +1,13 @@
-# Factor Buckets – A K-Means Clustering Approach to Stock Styles  
-<sup>“From Fundamentals to Factor Buckets: bridging data overload with narrative-friendly stock lists.”</sup>
+# Factor Buckets — A Sector-Neutral K-Means Pipeline for S&P 500 Stocks  
+*Converting a flood of raw ratios into stock styles you can act on.*
 
-[Read the full Medium article](https://medium.com/@your-handle/from-fundamentals-to-factor-buckets-a-clustering-approach-to-stock-styles-for-investors-498c5de72504)
+
+[Read the full Medium article](https://medium.com/@rmmrinal.q/from-fundamentals-to-factor-buckets-a-k-means-clustering-approach-to-stock-styles-498c5de72504)
 
 ---
 
 ## 📌 TL;DR
-
-Most screeners drown investors in ratios; this repo shows how to let the **data
-shape itself into the stories investors already use** (“Undervalued”, “High
+This repo shows how to let the **data shape itself into the stories investors already use, turning metric overload into actionable stock lists** (“Undervalued”, “High
 Growth”, “Prime Quality”).  
 A lightweight, sector-neutral K-Means pipeline turns 21 fundamentals for every
 S&P 500 stock into five factor buckets and a handful of intuitive style tiers,
