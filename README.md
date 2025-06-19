@@ -15,11 +15,11 @@ followed by a 7-week forward sanity test.
 
 ---
 
-## ✅ What’s working today
+## ✅ What’s working today 
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| **Data pull** | **Done** | 21 fundamentals + daily OHLC via *yfinance* → PostgreSQL (**scripts/get_data.py**) |
+| **Data pull** | **Done** | 21 fundamentals + daily OHLC via *yfinance* → store in database PostGreSQL - Vercel|
 | **Cleaning** | **Done** | sector-median impute · Yeo-Johnson transform · sector-neutral robust scaling · winsorise ±5 z |
 | **Feature screen** | **Done** | Spread-Ratio > 4 % filter |
 | **Clustering** | **Done** | Separate K-Means per factor; *k* chosen by Elbow + Silhouette + DB + bootstrap ARI |
@@ -31,29 +31,13 @@ followed by a 7-week forward sanity test.
 
 ## 🚧 Work in progress
 
+* **Streamlit deployment** – interactive screener (“Show me cheap stocks with steady margins”) - linking code so they all wrok together
+* * **LLM query layer** – translate plain English prompts into saved filters.  
 * **Robust data sources** – investigating *Financial Modeling Prep*, *SecAPI*, and point-in-time fundamentals to reduce survivorship bias.  
-* **Multi-year back-test** – rolling Window + sector-neutral returns, transaction-cost model.  
-* **Streamlit front-end** – interactive screener (“Show me cheap stocks with steady margins”).  
-* **LLM query layer** – translate plain English prompts into saved filters.  
+* **Multi-year back-test** – rolling Window + sector-neutral returns, transaction-cost model.   
 * **Ranking engine** – within-bucket scoring by z-score distance to centroid.  
-* **Part 2 Medium article** – deep dive on back-testing and the UI demo.
 
-Feel free to open issues or PRs if you’d like to help on any of these items.
+Feel free to reach out.
 
 ---
 
-## 🔧 Quick start
-
-```bash
-git clone https://github.com/your-handle/factor-buckets.git
-cd factor-buckets
-
-# 1) install environment
-conda env create -f environment.yml    # or: pip install -r requirements.txt
-conda activate factorbuckets
-
-# 2) pull fresh data (skips if already present)
-python scripts/get_data.py             # saves parquet files to /data/
-
-# 3) walk through the pipeline
-jupyter lab notebooks/01_pipeline.ipynb
