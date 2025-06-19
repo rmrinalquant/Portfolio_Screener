@@ -2,7 +2,7 @@
 *Converting a flood of raw ratios into stock styles you can act on.*
 
 
-[Read the full Medium article](https://medium.com/@rmmrinal.q/from-fundamentals-to-factor-buckets-a-k-means-clustering-approach-to-stock-styles-498c5de72504)
+[Read the full Medium article](https://medium.com/@rmmrinal.q/from-data-overload-to-actionable-buckets-k-means-clustering-for-stock-screening-b1520b9c7484)
 
 ---
 
