@@ -19,7 +19,7 @@ followed by a 7-week forward sanity test.
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| **Data pull** | **Done** | 21 fundamentals + daily OHLC via *yfinance* → store in database PostGreSQL - Vercel|
+| **Data pull** | **Done** | 21 fundamentals + daily OHLC via *yfinance* *Risk/momentum metric calculation for prefious 3 years*→ store in database PostGreSQL - Vercel|
 | **Cleaning** | **Done** | sector-median impute · Yeo-Johnson transform · sector-neutral robust scaling · winsorise ±5 z |
 | **Feature screen** | **Done** | Spread-Ratio > 4 % filter |
 | **Clustering** | **Done** | Separate K-Means per factor; *k* chosen by Elbow + Silhouette + DB + bootstrap ARI |
