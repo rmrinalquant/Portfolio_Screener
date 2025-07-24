@@ -5,9 +5,31 @@ import plotly.express as px
 from pathlib import Path
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
+import numpy as np 
 # ──────────────────────────────────────────────────────────────
-# 1. Data loading / caching
+# Constants to be used in the entire scripts
 # ──────────────────────────────────────────────────────────────
+
+TAG_BUCKETS = {
+        "Value":                ["Undervalued", "Fair Value", "Overvalued"],
+        "Growth":               ["High Growth", "Low Growth"],
+        "Quality":              ["High Quality", "Average Quality", "Lower Quality"],
+        "Defensive":            ["High Defense", "Average Defense", "Low Defense"],
+        "Risk & Momentum":      ["Strong risk adjusted gains", "Average risk adjusted gains", "Poor risk adjusted gains"],
+    }
+
+COLUMN_MAP = {
+        "Value": "Value",
+        "Growth": "Growth",
+        "Quality": "Quality",
+        "Defensive": "Defensive",
+        "Risk & Momentum": "Risk_Momentum",
+    }
+
+# ──────────────────────────────────────────────────────────────
+# Data loading / caching
+# ──────────────────────────────────────────────────────────────
+
 @st.cache_data
 def fetch_cluster_data():
     path = Path(__file__).resolve().parent / "artifacts" / "final_data"
@@ -19,10 +41,13 @@ def fetch_cluster_data():
 def get_meta_data():
     path = Path(__file__).resolve().parent / "artifacts"
     return pd.read_csv(path / "metadata.csv")
-
 @st.cache_data
 def get_price_data(ticker: str, start_date: datetime, end_date: datetime) -> pd.DataFrame:
     return yf.download(ticker, start=start_date, end=end_date)
+
+# ──────────────────────────────────────────────────────────────
+# Helper functions
+# ──────────────────────────────────────────────────────────────
 
 def price_chart(df: pd.DataFrame, ticker: str):
     if df is None or df.empty or "Close" not in df:
@@ -32,9 +57,19 @@ def price_chart(df: pd.DataFrame, ticker: str):
                   title=f"{ticker} Stock Price")
     st.plotly_chart(fig, use_container_width=True)
 
+def get_filtered_df(df : pd.DataFrame, selections : dict[str, list[str]]) -> pd.DataFrame:
+    df = df.copy()
+    mask = np.ones(len(merged_data), dtype=bool)
+    for bucket, tags in selections.items():
+        if tags:
+            col = COLUMN_MAP[bucket]
+            mask &= df[col].isin(tags)
+    return df[mask]
+
 # ──────────────────────────────────────────────────────────────
-# 2. App configuration
+# Streamlit UI
 # ──────────────────────────────────────────────────────────────
+
 st.set_page_config(page_title="Smart Stock Explorer", layout="wide")
 st.sidebar.title("🔍 Smart Stock Explorer")
 
@@ -43,44 +78,53 @@ transformed_data, merged_data = fetch_cluster_data()
 meta_data = get_meta_data()
 
 # ──────────────────────────────────────────────────────────────
-# 3. Stock Lookup mode (unchanged)
+# Stock Lookup mode (fixed)
 # ──────────────────────────────────────────────────────────────
+
 if mode == "Stock Lookup":
     st.header("🔎 Stock Lookup")
     st.sidebar.markdown(
-            """
-            ## Use Stock Lookup to view :
-            - Historical price chart for any S&P 500 ticker  
-            - Company profile (sector, industry, country, description)  
-            - Key performance statistics (Sharpe, drawdown, return, volatility, beta)  
-            - Factor‑driven clustering tags (Value, Growth, Quality, Defensive, Risk & Momentum).
-            """
-        )
+        """
+        ## Use Stock Lookup to view :
+        - Historical price chart for any S&P 500 ticker  
+        - Company profile (sector, industry, country, description)  
+        - Key performance statistics (Sharpe, drawdown, return, volatility, beta)  
+        - Factor‑driven clustering tags (Value, Growth, Quality, Defensive, Risk & Momentum).
+        """
+    )
 
-    ticker     = st.sidebar.text_input("Ticker symbol", value="AAPL").upper().strip()
+    # Sidebar inputs
+    ticker_input = st.sidebar.text_input("Ticker symbol", value="AAPL")
+    ticker = ticker_input.upper().strip()
     start_date = st.sidebar.date_input("Start date", value=date(2020, 1, 1))
-    end_date   = st.sidebar.date_input("End date",   value=date.today())
-    fetch      = st.sidebar.button("Get Price Data")
+    end_date = st.sidebar.date_input("End date", value=date.today())
+    fetch = st.sidebar.button("Get Price Data")
 
-    if 'price_data' not in st.session_state:
+    # On fetch, load data into session
+    if fetch and ticker:
+        data = get_price_data(ticker, start_date, end_date)
+        st.session_state.price_data = data
+        st.session_state.ticker = ticker
+
+    # Retrieve from session or empty
+    df = st.session_state.get("price_data", pd.DataFrame())
+    current_ticker = st.session_state.get("ticker", "")
+
+    # Initial prompt
+    if current_ticker == "":
         st.info("Use the sidebar to enter a ticker and dates, then click **Get Price Data**.")
     else:
-        if fetch and ticker:
-            st.session_state["price_data"] = get_price_data(ticker, start_date, end_date)
-            st.session_state["ticker"]     = ticker
-
-        df = st.session_state["price_data"]
         if df.empty:
             st.error("No data returned for that symbol.")
         else:
-            price_chart(df, st.session_state["ticker"])
+            price_chart(df, current_ticker)
 
             tabs = st.tabs(["About Company", "Price Data", "Stats", "Smart Tags"])
             about, price_tab, stats_tab, tags_tab = tabs
 
             with about:
                 st.subheader("Company Profile")
-                row = meta_data[meta_data["ticker"] == st.session_state["ticker"]]
+                row = meta_data[meta_data["ticker"] == current_ticker]
                 if row.empty:
                     st.warning("No metadata found.")
                 else:
@@ -97,7 +141,7 @@ if mode == "Stock Lookup":
 
             with stats_tab:
                 st.subheader("Key Statistics (3‑year window)")
-                stats = merged_data[merged_data["ticker"] == st.session_state["ticker"]]
+                stats = merged_data[merged_data["ticker"] == current_ticker]
                 if stats.empty:
                     st.warning("No stats available.")
                 else:
@@ -115,10 +159,13 @@ if mode == "Stock Lookup":
                     r4, r5, _ = st.columns(3)
                     r4.metric("Annual Volatility", f"{vo:.2%}")
                     r5.metric("Beta vs S&P 500",   f"{bt:.2f}")
+                
+                st.write("Note: Stats calculation is based on a 3-year window from 22 april 2022 till 22 april 2025"
+                " Update comminng soon to get latest stats.")
 
             with tags_tab:
                 st.subheader("Factor‑Driven Tags")
-                tags = merged_data[merged_data["ticker"] == st.session_state["ticker"]]
+                tags = merged_data[merged_data["ticker"] == current_ticker]
                 if tags.empty:
                     st.warning("No tags found.")
                 else:
@@ -127,38 +174,27 @@ if mode == "Stock Lookup":
                         ("Quality","🏭"),("Defensive","🛡️"),
                         ("Risk_Momentum","📈")
                     ]:
-                        tag = tags[col].iat[0]
-                        with st.expander(f"{emoji} {tag}"):
+                        tag_val = tags[col].iat[0]
+                        with st.expander(f"{emoji} {tag_val}"):
                             st.write("Explanation coming soon…")
 
 
 # ──────────────────────────────────────────────────────────────
-# 4. Smart Search mode (updated)
+# Smart Search mode 
 # ──────────────────────────────────────────────────────────────
 else:  # Smart Search
     # Sidebar controls
     st.sidebar.header("🧠 Smart Search Controls")
-    st.sidebar.info("🚧 Test phase: currently supports only S&P 500 data.\n🔜 Mix‑and‑match search coming soon!")
+    st.sidebar.info("🚧 Test phase: currently supports only S&P 500 data.")
 
-    TAG_BUCKETS = {
-        "Value":                ["Undervalued", "Fair Value", "Overvalued"],
-        "Growth":               ["High Growth", "Low Growth"],
-        "Quality":              ["High Quality", "Average Quality", "Lower Quality"],
-        "Defensive":            ["High Defense", "Average Defense", "Low Defense"],
-        "Risk & Momentum":      ["Strong Risk-Adjusted Gains", "Average Risk-Adjusted Gains", "Poor Risk-Adjusted Gains"],
-    }
-    COLUMN_MAP = {
-        "Value": "Value",
-        "Growth": "Growth",
-        "Quality": "Quality",
-        "Defensive": "Defensive",
-        "Risk & Momentum": "Risk_Momentum",
-    }
+    selections = {}
+    for bucket , tag in TAG_BUCKETS.items():
+        choose = st.sidebar.multiselect(bucket, tag, key=bucket)
+        if choose:
+            selections[bucket] = choose
 
-    bucket = st.sidebar.selectbox("Select Factor Category", list(TAG_BUCKETS.keys()))
-    # 2️⃣ choose label within bucket
-    tag_choice = st.sidebar.selectbox("Select Tag", TAG_BUCKETS[bucket])
-
+    st.sidebar.subheader("Slider Settings")
+    top_n = st.sidebar.slider("Select top N filtered stocks", min_value= 5, max_value= 50,value=10, step=1) 
     run_search    = st.sidebar.button("Run Search")
     show_glossary = st.sidebar.checkbox("Show Detailed Tag Glossary")
 
@@ -250,21 +286,87 @@ You’ll instantly see:
 - The **complete list** of all matching stocks
             """)
         else:
-            col = COLUMN_MAP[bucket]
-            df  = merged_data[merged_data[col] == tag_choice]
-            top10 = df.sort_values(f"{bucket}_distance", ascending=True).head(10)
-
-            end_date = datetime.now()
-            start_date = (end_date - relativedelta(years=5))
             
-            stock_list = top10["ticker"].tolist() + ["SPY"]
-            price_raw = get_price_data(stock_list, start_date, end_date)['Close']
+            if len(selections) == 0:
+                st.write("Please select at least one tag in the sidebar.")
 
-            st.line_chart(price_raw)
+            else:
+                filtered_data = get_filtered_df(merged_data, selections)
+                if filtered_data.shape[0] == 0:
+                    st.write("No matching stocks found. Please try again with different tags.")
+                else:
+                    if len(selections) == 1:
+                        only_bucket = next(iter(selections))
+                        core_name    = COLUMN_MAP[only_bucket] 
+                        distance_col = f"{core_name}_distance"
+                        top_10 = filtered_data.sort_values(distance_col, ascending=True).head(top_n)
+                    else:
+                        top_10 = filtered_data.sort_values("sharpe_ratio", ascending=False).head(top_n)
+                    
+                    st.write(f"{filtered_data.shape[0]} matching stocks found.")    
+                    end_date = datetime.now()
+                    start_date = (end_date - relativedelta(years=5))
 
-            tabs = st.tabs(["Top 10", "Complete List"])
-            with tabs[0]:
-                st.dataframe(top10[['ticker','sector','sharpe_ratio', 'beta']])
-            with tabs[1]:
-                st.dataframe(df)
-            
+                    stock_list = top_10["ticker"].tolist() + ["SPY"]
+                    price_raw = get_price_data(stock_list, start_date, end_date)['Close']
+                    price_norm = price_raw.divide(price_raw.iloc[0])
+
+                    # assume price_norm is a DataFrame whose columns are tickers, index is datetime
+                    fig = px.line(price_norm, 
+                            labels={'index':'Date', 'value':'Normalized Price'},
+                            title=f"Normalized Price Chart")
+
+                    # override just the SPX trace to white  
+                    fig.update_traces(
+                                selector=dict(name="SPY"),   
+                                line=dict(color="white", width=2) 
+                                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    port, s_data, data  = st.tabs(["Portfolio",f"Selected {top_n} stocks", "Full list of Filtered stocks"])
+                    with port:
+                        st.header("Portfolio: How the filtered stocks performed")
+                        st.write(""" **Methodology**:
+                                 
+                                    **Benchmark**: S&P 500
+                                    **Tagging date**: 22 April 2025
+                                    **Ranking**: Stocks were ordered by their distance to the cluster centre.
+                                    **Portfolio**: Top‑N names were given equal weights.
+                                    **Status**: The performance is after the tagging is done and what will happen if you invest 10000 USD.
+                                    """)
+
+                        price_raw.index = pd.to_datetime(price_raw.index).tz_localize(None)
+                        cutoff = "2025-04-22"
+                        price_recent = price_raw.loc[cutoff:]  
+
+                        #cutoff = pd.Timestamp("2025-04-22")      # HARD CODED -- AS THE ML ALGO RUNS ON 22 APRIL
+
+                        #price_data = price_raw.loc[cutoff:]
+                        invested_amount = 10000
+                        rets = price_recent.pct_change().dropna()
+                        tic = [x for x in rets.columns if x != "SPY"]
+                        basket = rets[tic].mean(axis=1)
+                        basket_cum = (basket + 1).cumprod().to_frame("Portfolio")
+                        spy = (1+rets["SPY"]).cumprod().to_frame("SPY")
+                        cum = pd.concat([basket_cum, spy], axis=1)
+
+                        st.line_chart(cum*invested_amount)
+
+                    with s_data:
+                        st.header(f"Selected {top_n} stocks")
+                        if len(selections) > 1:
+                            st.write(top_10[['ticker','sector','sharpe_ratio', 'beta','market_cap','dividend_yield']])
+                        else:
+                            st.write(top_10[['ticker','sector','sharpe_ratio', 'beta','market_cap','dividend_yield',distance_col]])
+                        
+                        st.write('Below is the five year price data for the selected stocks')
+                        st.write(price_raw)
+
+                    with data:
+                        st.header("Full List of Filtered Data")
+                        if len(selections) > 1:
+                            st.write(filtered_data[['ticker','sector','sharpe_ratio', 'beta','market_cap','dividend_yield']])
+                        else:
+                            st.write(filtered_data[['ticker','sector','sharpe_ratio', 'beta','market_cap',distance_col]])
+
